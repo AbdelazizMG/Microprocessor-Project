@@ -1,5 +1,7 @@
 # Microprocessor-Project
 
+This is a project for Advanced Microprocessor subject in EECE2023
+
 # Members
 - Aya Reda
 - Abdallah Saied
