@@ -8,4 +8,4 @@ This is a project for Advanced Microprocessor subject in EECE2023
 - Abdelaziz Mohammad
 
 # Description
-This Project is about Simulating UART/USB Communication Protocol using MATLAB
+This Project is about Emulating UART/USB Communication Protocol using MATLAB App Designer
