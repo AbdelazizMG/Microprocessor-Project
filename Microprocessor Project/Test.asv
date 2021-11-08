@@ -49,16 +49,12 @@
                 % Data               
                data = num2str(Element1)-'0';                                              % seperate them with spaces to be an array 
                
-               try_length = length(data);
-               
-               if(json_config(1).inputs.data_bits == 8 && length(data) == 7)      % make the data 8 bits
+               if(json_config(1).inputs.data_bits == length(data) && length(data) == 7)      % make the data 8 bits
                      data = [ 0 data ] ;                
-               elseif((json_config(1).inputs.data_bits == 8 && length(data) == 8) || (json_config(1).inputs.data_bits == 7 && length(data) == 7))  
-                   % do nth       
-               elseif(json_config(1).inputs.data_bits == 8 && length(data) == 6)  % make the data 8 bits
-                     data = [0 0 data];  
-               elseif(json_config(1).inputs.data_bits == 7 && length(data) == 6)  % make the data 8 bits
-                     data = [0 data];        
+               elseif(json_config(1).inputs.data_bits == length(data) && length(data) == 8)  % do nth
+                     data = [data];
+               elseif(json_config(1).inputs.data_bits == length(data) && length(data) == 6)  % make the data 8 bits
+                     data = [0 0 data];      
                end
                data = flip(data);                   % flip data to make LSB is the MSB and vice versa
                
@@ -70,10 +66,9 @@
                
                idle_start_bit = [idle_bit start_bit];
                Onestop_Noparity_idle_bit = [stop_bit idle_bit];
-               Twostop_Noparity_idle_bit = [stop_bit stop_bit idle_bit];
-               
-               Onestop_parity_idle_bit = [0 0 0];
-               Twostop_parity_idle_bit = [0 0 0];
+               Onestop_parity_idle_bit = [stop_bit parity_bit idle_bit];
+               Twostop_Noparity_idle_bit = [stop_bit idle_bit];
+               Twostop_parity_idle_bit = [stop_bit stop_bit parity_bit idle_bit];
                
                %Frame
                frame= [ idle_start_bit data Onestop_Noparity_idle_bit ];
@@ -86,31 +81,8 @@
                elseif (json_config(1).inputs.stop_bits == 2 && json_config(1).inputs.parity == "none")
                     frame = [ idle_start_bit data Twostop_Noparity_idle_bit];
                elseif (json_config(1).inputs.stop_bits == 1 && (json_config(1).inputs.parity == "even"||json_config(1).inputs.parity == "odd"))
-                    number_of_ones = nnz(data);        %count number of ones in the data
-                    if(json_config(1).inputs.parity == "even" && mod(number_of_ones,2) == 0)
-                        parity_bit =0;
-                    elseif ( (json_config(1).inputs.parity == "even" && mod(number_of_ones,2) ~= 0))
-                        parity_bit =1;
-                    elseif ( (json_config(1).inputs.parity == "odd" && mod(number_of_ones,2) == 0))
-                        parity_bit =1;
-                    elseif ( (json_config(1).inputs.parity == "odd" && mod(number_of_ones,2) ~= 0))
-                        parity_bit =0;  
-                    end
-                 Onestop_parity_idle_bit = [parity_bit stop_bit  idle_bit];  
-                 frame = [ idle_start_bit data Onestop_parity_idle_bit];
-                         
+                    frame = [ idle_start_bit data Onestop_parity_idle_bit];
                elseif (json_config(1).inputs.stop_bits == 2 && (json_config(1).inputs.parity == "even"||json_config(1).inputs.parity == "odd"))
-                      number_of_ones = nnz(data);        %count number of ones in the data
-                    if(json_config(1).inputs.parity == "even" && mod(number_of_ones,2) == 0)
-                        parity_bit =0;
-                    elseif ( (json_config(1).inputs.parity == "even" && mod(number_of_ones,2) ~= 0))
-                        parity_bit =1;
-                    elseif ( (json_config(1).inputs.parity == "odd" && mod(number_of_ones,2) == 0))
-                        parity_bit =1;
-                    elseif ( (json_config(1).inputs.parity == "odd" && mod(number_of_ones,2) ~= 0))
-                        parity_bit =0;  
-                    end
-                    Twostop_parity_idle_bit = [parity_bit stop_bit stop_bit  idle_bit];     
                     frame = [ idle_start_bit data Twostop_parity_idle_bit];                    
                end
                
@@ -119,7 +91,8 @@
 
                
 
-              stairs ([frame,frame(end)]); 
+               stairs ([frame,frame(end)]); 
+
 
 
 
