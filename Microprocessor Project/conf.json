@@ -3,7 +3,7 @@
 		"inputs": {
 			"data_bits": 8,
 			"stop_bits": 1,
-			"parity": "even",
+			"parity": "none",
             "bit_duration": 1
 		}
 	},
