@@ -12,8 +12,8 @@ This is a project for Advanced Microprocessor subject in EECE2023
 
 - The Application Reads Two Files:
 
-1- (conf.json) which contains the configuration for both protocols in json format.
-2- (inputdata.txt) which contains the required data to be plotted.
+       1- (conf.json) which contains the configuration for both protocols in json format.
+       2- (inputdata.txt) which contains the required data to be plotted.
 
 - The Application then draws the (UART frame - USB Packets) for first (two bytes) of the read data and generates an output file
   in json format containing the (total transmit time - overhead - effeciency) for both protocols.
