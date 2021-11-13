@@ -20,4 +20,9 @@
   
 - A comparison between the increase in (total transmit time & overhead) with the increase of the file size for both protocols is also
   plotted in seperate figure.
+  
+- A Snapshots from the Application is shown below:
+
+ ![app](https://user-images.githubusercontent.com/68661639/141636083-120e14ce-346e-4b78-85b7-ecc571e3e8a5.JPG)
+  
 
