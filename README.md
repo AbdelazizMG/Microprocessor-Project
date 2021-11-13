@@ -23,8 +23,8 @@
   
 - A Snapshots from the Application is shown below:
 
- ![app](https://user-images.githubusercontent.com/68661639/141636083-120e14ce-346e-4b78-85b7-ecc571e3e8a5.JPG)
- ![app2](https://user-images.githubusercontent.com/68661639/141638048-0f026d57-f52f-477e-a968-b698fd9662a4.JPG)
+![app](https://user-images.githubusercontent.com/68661639/141636083-120e14ce-346e-4b78-85b7-ecc571e3e8a5.JPG) 
+![app2](https://user-images.githubusercontent.com/68661639/141638048-0f026d57-f52f-477e-a968-b698fd9662a4.JPG)
 
   
 
