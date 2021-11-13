@@ -2,24 +2,12 @@
                %Open config.json 
                json_filename = 'conf.json';
                json_config = jsondecode(fileread(json_filename));               
-               %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%             
-               % Open  input.txt file
-               filename = 'inputdata.txt';
-               fileID = fopen(filename);
-               formatspec = '%c';
-               Array = fscanf(fileID,formatspec);                                     
-               fclose(fileID);
-                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+               %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                %Solve Questions in the PDF
                UART.NumberOfNonDataBits=0;
                UART.NumberOfDataBits=json_config(1).inputs.data_bits;
                UART.TotalNumberOfBits=0;
                UART.Bitduration = json_config(1).inputs.bit_duration;
-               
-               USB.Bitduration = json_config(2).inputs.bit_duration;
-               USB.NumberOfNonDataBits=30;
-               USB.NumberOfDataBits=1024;
-               USB.TotalNumberOfBits = USB.NumberOfNonDataBits+USB.NumberOfDataBits;
                
                if(json_config(1).inputs.parity == "none")
                    UART.NumberOfNonDataBits= json_config(1).inputs.stop_bits + 1; %start and Stop Bits
@@ -36,41 +24,16 @@
                
                OUTPUT(2).protocol_name= "USB";
                
-               OUTPUT(2).outputs.total_tx_time = USB.Bitduration * USB.TotalNumberOfBits * 2;
-               OUTPUT(2).outputs.overhead = ( (USB.NumberOfNonDataBits *100) / USB.TotalNumberOfBits);
-               OUTPUT(2).outputs.efficiency = ( (USB.NumberOfDataBits*100) / USB.TotalNumberOfBits);
-               
-               for counter = 1 :5 
-               OUTPUT_UART_PLOT_TotalTxTime(counter) = UART.Bitduration * UART.TotalNumberOfBits * length(Array) * counter ;
-               OUTPUT_USB_PLOT_TotalTxTime(counter) =  USB.Bitduration  * USB.TotalNumberOfBits * length(Array) * counter;
-               end
-               file_size = [ length(Array) length(Array)*2 length(Array)*3 length(Array)*4 length(Array)*5];
-               
-               for counter = 1 :5
-                   OUTPUT_UART_PLOT_OVERHEAD(counter) = ( (UART.NumberOfNonDataBits * file_size(counter)) / (UART.TotalNumberOfBits * file_size(counter)));
-                   OUTPUT_USB_PLOT_OVERHEAD(counter) = ( (USB.NumberOfNonDataBits * file_size(counter)) / (USB.TotalNumberOfBits * file_size(counter)));
-               end
-               
-               tiledlayout(2,2);
-               nexttile;
-               plot(file_size,OUTPUT_UART_PLOT_TotalTxTime);
-               title('UART Transmit time');
-               xlabel('File Size');
-               nexttile;
-               plot(file_size,OUTPUT_USB_PLOT_TotalTxTime);
-               title('USB Transmit time');
-               xlabel('File Size');
-               nexttile;
-               plot(file_size,OUTPUT_UART_PLOT_OVERHEAD);
-               title('UART Overhead');
-               xlabel('File Size');
-               ylabel('Overhead');
-               nexttile;
-               plot(file_size,OUTPUT_USB_PLOT_OVERHEAD);
-               title('USB Overhead'); 
-               xlabel('File Size');
-               ylabel('Overhead');
-
+               OUTPUT(2).outputs.total_tx_time = UART.Bitduration * UART.TotalNumberOfBits * 2;
+               OUTPUT(2).outputs.overhead = ( (UART.NumberOfNonDataBits *100) / UART.TotalNumberOfBits);
+               OUTPUT(2).outputs.efficiency = ( (UART.NumberOfDataBits*100) / UART.TotalNumberOfBits);
+               %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+               % Open  input.txt file
+               filename = 'input.txt';
+               fileID = fopen(filename);
+               formatspec = '%c';
+               Array = fscanf(fileID,formatspec);                                     
+               fclose(fileID);
                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                % Read Data
                Element1=dec2bin(Array([1]),8);        % convert intered charater into binary
@@ -266,14 +229,19 @@
                   USB.data2(counter_data) = out(counter);  
                   counter_data = counter_data +1;
               end
+              
+              USB.data = flip(USB.data);
+              USB.data2 = flip(USB.data2);
+              USB_frame = [USB.synch_pattern USB.PID USB.addressing USB.data USB.EOP USB.synch_pattern USB.PID2 USB.addressing  USB.data2 USB.EOP];            
+              USB.output = [1 USB.synch_pattern USB.PID USB.addressing USB.data USB.EOP USB.synch_pattern USB.PID2 USB.addressing  USB.data2 USB.EOP]; %initial value for the output
+              USB.frame_length = length(USB_frame);
+              USB.output_length = length(USB.output);
 
-a=[ 1 0 0 0 1 1 0 1 0 1 0 1 0 1];
-b=[0 1 1 1 0 0 1 0 1 0 1 0 1 0 ];
-figure;
-stairs ([a,a(end)])
-hold on
-stairs ([b,b(end)])
-hold off
+test = [1 1 1];
+test2 = ~test;
+
+%0   1   1   1   0   1   0   0   0   0   1   0   0   0   0   0   0   1   1   0   0   1   1   0   0   1   1   0   1   1   1   1
+
 
 
 
