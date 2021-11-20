@@ -28,27 +28,27 @@
                    end
                UART.TotalNumberOfBits = UART.NumberOfNonDataBits + UART.NumberOfDataBits;
                
-               OUTPUT(1).protocol_name= "UART";
+
                
-               OUTPUT(1).outputs.total_tx_time = UART.Bitduration * UART.TotalNumberOfBits * 2;
-               OUTPUT(1).outputs.overhead = ( (UART.NumberOfNonDataBits *100) / UART.TotalNumberOfBits);
-               OUTPUT(1).outputs.efficiency = ( (UART.NumberOfDataBits*100) / UART.TotalNumberOfBits);
+               file_size = 1280 : 1 : 3001;
                
-               OUTPUT(2).protocol_name= "USB";
-               
-               OUTPUT(2).outputs.total_tx_time = USB.Bitduration * USB.TotalNumberOfBits * 2;
-               OUTPUT(2).outputs.overhead = ( (USB.NumberOfNonDataBits *100) / USB.TotalNumberOfBits);
-               OUTPUT(2).outputs.efficiency = ( (USB.NumberOfDataBits*100) / USB.TotalNumberOfBits);
-               
-               for counter = 1 :5 
-               OUTPUT_UART_PLOT_TotalTxTime(counter) = UART.Bitduration * UART.TotalNumberOfBits * length(Array) * counter ;
-               OUTPUT_USB_PLOT_TotalTxTime(counter) =  USB.Bitduration  * USB.TotalNumberOfBits * length(Array) * counter;
+               for counter = 1 : 1722
+               OUTPUT_UART_PLOT_TotalTxTime(counter) = UART.Bitduration * UART.TotalNumberOfBits * file_size(counter) ;
+               OUTPUT_USB_PLOT_TotalTxTime(counter) =  USB.Bitduration  * USB.TotalNumberOfBits * file_size(counter)/128;
                end
-               file_size = [ length(Array) length(Array)*2 length(Array)*3 length(Array)*4 length(Array)*5];
+              
                
-               for counter = 1 :5
-                   OUTPUT_UART_PLOT_OVERHEAD(counter) = ( (UART.NumberOfNonDataBits * file_size(counter)) / (UART.TotalNumberOfBits * file_size(counter)));
-                   OUTPUT_USB_PLOT_OVERHEAD(counter) = ( (USB.NumberOfNonDataBits * file_size(counter)) / (USB.TotalNumberOfBits * file_size(counter)));
+               for counter = 1 : 1722
+                   OUTPUT_UART_PLOT_OVERHEAD(counter) = ( (UART.NumberOfNonDataBits * file_size(counter)) / (UART.TotalNumberOfBits * file_size(counter)));   
+                   OUTPUT_USB_PACKETS =   floor (( file_size(counter) / 128)) ; 
+                   OUTPUT_USB_DataReminder(counter) = mod( file_size(counter) , 128 ) ;
+                   if ( OUTPUT_USB_DataReminder(counter) == 0 )
+                   format longg
+                   OUTPUT_USB_PLOT_OVERHEAD(counter) = (( USB.NumberOfNonDataBits * OUTPUT_USB_PACKETS ) / (( USB.NumberOfNonDataBits * OUTPUT_USB_PACKETS ) + ( OUTPUT_USB_PACKETS * 128 * 8)));
+                   elseif ( OUTPUT_USB_DataReminder(counter) > 0 )
+                    format longg
+                      OUTPUT_USB_PLOT_OVERHEAD(counter) = (( USB.NumberOfNonDataBits * (OUTPUT_USB_PACKETS + 1)  ) / (( USB.NumberOfNonDataBits * (OUTPUT_USB_PACKETS+1) ) + ( OUTPUT_USB_PACKETS * 128 * 8)));
+                   end
                end
                
                tiledlayout(2,2);
@@ -70,6 +70,18 @@
                title('USB Overhead'); 
                xlabel('File Size');
                ylabel('Overhead');
+               
+               OUTPUT(1).protocol_name= "UART";
+               
+               OUTPUT(1).outputs.total_tx_time = OUTPUT_UART_PLOT_TotalTxTime(1);
+               OUTPUT(1).outputs.overhead = OUTPUT_UART_PLOT_OVERHEAD(1) * 100 ;
+               OUTPUT(1).outputs.efficiency = 100 - OUTPUT_UART_PLOT_OVERHEAD(1) * 100 ;
+               
+               OUTPUT(2).protocol_name= "USB";
+               
+               OUTPUT(2).outputs.total_tx_time = OUTPUT_USB_PLOT_TotalTxTime(1);
+               OUTPUT(2).outputs.overhead = OUTPUT_USB_PLOT_OVERHEAD(1) * 100 ;
+               OUTPUT(2).outputs.efficiency = 100 - OUTPUT_USB_PLOT_OVERHEAD(1) * 100 ;
 
                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                % Read Data
@@ -207,27 +219,61 @@
              
               USB.synch_pattern = [ 0 0 0 0 0 0 0 1];
               USB.PID = [0 0 0 0 0 0 0 1];
-              USB.EOP = [ 0 0 1];
-              USB.data = num2str(Element1)-'0';                       % seperate them with spaces to be an array 
-              USB.data2 = num2str(Element2)-'0';                      % seperate them with spaces to be an array 
-              USB_frame = [USB.synch_pattern USB.PID USB.data USB.EOP];
-              
-              
-              USB.frame_length = length(USB_frame);
-              
-              USB.output = [1 USB.synch_pattern USB.PID USB.data USB.EOP];
-              
-                
-              for counter = 1 : USB.frame_length
-                  if ( USB_frame(counter) == 1 )
-                      USB.output(counter+1)= USB.output(counter);
-                  else
-                      USB.output(counter+1) = ~USB.output(counter);
-                  end
-              end
+              USB.PID2 = [0 0 0 0 0 0 1 0];
+              USB.EOP = [ 0 0 0];
               USB.addressing = json_config(2).inputs.destination_address;  
               USB.addressing = dec2bin(USB.addressing,11);
               USB.addressing = num2str(USB.addressing)-'0';
+               out = reshape(Array,1280,[]);                            %Format the text into characters each on a line
+               out = logical (dec2bin(out,8)-'0');                      % convert those characters into their binary equivalent
+               out = reshape(out',[1 size(out,1) * size(out,2)]);       % convert it back to 1 dimensional array
+               counter_data = 1;
+              for counter = 1 :1024
+                  USB.data(counter) = out(counter);
+              end
+              for counter = 1025:2048
+                  USB.data2(counter_data) = out(counter);  
+                  counter_data = counter_data +1;
+              end
+              
+              USB.data = flip(USB.data);
+              USB.data2 = flip(USB.data2);
+              USB_frame = [USB.synch_pattern USB.PID USB.addressing USB.data USB.EOP USB.synch_pattern USB.PID2 USB.addressing USB.data2 USB.EOP];    
+              USB_frame = regexprep(char(USB_frame+'0'),'111111','1111110')-'0';
+              USB.output = [1 USB.synch_pattern USB.PID USB.addressing USB.data USB.EOP USB.synch_pattern USB.PID2 USB.addressing  USB.data2 USB.EOP]; %initial value for the output
+              USB.outputdiff = ~ USB.output; %differential output
+              USB.frame_length = length(USB_frame);
+              USB.output_length = length(USB.output);
+              USB.EOP_index = floor ( ((USB.frame_length)/2)-2 );
+              
+                            % Loop for toggling the bits to generate the packets to be
+              % plotted.
+              for counter = 1 : USB.frame_length
+                  if(USB_frame(counter)== 0 && counter == USB.EOP_index )
+                      USB.output(counter+1)= 0;
+                      if(USB.EOP_index == 1052)
+                          USB.EOP_index = USB.EOP_index+1; % 1053
+                      elseif(USB.EOP_index == 1053)
+                          USB.EOP_index = 2107;
+                      elseif(USB.EOP_index == 2107)
+                          USB.EOP_index = USB.EOP_index+1;     
+                      end
+                 
+                  elseif ( USB_frame(counter) == 1 )
+                      USB.output(counter+1)= USB.output(counter);
+                  elseif (USB_frame(counter) == 0)
+                      USB.output(counter+1) = ~USB.output(counter);
+                  end
+              end
+              
+              for counter = 1: USB.output_length
+                  if(counter == 1053 || counter == 1054 || counter == 2108 || counter == 2109 )
+                      USB.outputdiff(counter) = 0;
+                  else
+                      USB.outputdiff(counter) = ~ USB.output(counter);
+                  end
+                  
+              end
               
               
                              % Open  input.txt file
@@ -239,41 +285,11 @@
                
                               % Read Data
                Element12= logical(dec2bin(Array_s([1]),8)-'0');        % convert intered charater into binary
-               Element22= logical(dec2bin(Array_s([2]),8)-'0');        % convert intered charater into binary
-            
-    % out = reshape(Array_s,1280,[]);
-     
-%     out = logical (dec2bin(out,8)-'0');
-               
- %    out = reshape(out',[1 size(out,1) * size(out,2)]);
+               Element22= logical(dec2bin(Array_s([2]),8)-'0');        % convert intered charater into binary           
+
+   
 
 
-          USB.synch_pattern = [ 0 0 0 0 0 0 0 1];
-              USB.PID = [0 0 0 0 0 0 0 1];
-              USB.PID2 = [0 0 0 0 0 0 1 0];
-              USB.EOP = [ 0 0 0];
-              USB.addressing = json_config(2).inputs.destination_address;  
-              USB.addressing = dec2bin(USB.addressing,11);
-              USB.addressing = num2str(USB.addressing)-'0';
-               out = reshape(Array_s,1280,[]);                            %Format the text into characters each on a line
-               out = logical (dec2bin(out,8)-'0');                      % convert those characters into their binary equivalent
-               out = reshape(out',[1 size(out,1) * size(out,2)]);       % convert it back to 1 dimensional array
-               counter_data = 1;
-              for counter = 1 :1024
-                  USB.data(counter) = out(counter);
-              end
-              for counter = 1024:2048
-                  USB.data2(counter_data) = out(counter);  
-                  counter_data = counter_data +1;
-              end
-
-a=[ 1 0 0 0 1 1 0 1 0 1 0 1 0 1];
-b=[0 1 1 1 0 0 1 0 1 0 1 0 1 0 ];
-figure;
-stairs ([a,a(end)])
-hold on
-stairs ([b,b(end)])
-hold off
 
 
 

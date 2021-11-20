@@ -4,7 +4,7 @@
 			"data_bits": 8,
 			"stop_bits": 1,
 			"parity": "none",
-            "bit_duration": 1
+            "bit_duration": 0.0001
 		}
 	},
 	{
@@ -14,7 +14,7 @@
 			"packet_ident_length": 8,
 			"destination_address": 123,
             "payload": 128,
-            "bit_duration": 1
+            "bit_duration": 0.0001
 		}
 	}
 ]
