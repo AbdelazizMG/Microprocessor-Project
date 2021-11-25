@@ -1,9 +1,0 @@
-{
- 	"protocol_name": "UART",
-	"parameters": {
-		"data_bits": 8,
-		"stop_bits": 1,
-		"parity": "none",
-		"bit_duration": 0.0001
-	}
-}
